@@ -28,7 +28,7 @@ export default function SpotifyCallbackPage() {
     }
 
     api.spotify
-      .exchangeToken(code, window.location.origin + "/callback")
+      .exchangeToken(code, "http://127.0.0.1:5173/callback")
       .then((data) => {
         const tokens = {
           accessToken: data.accessToken,
