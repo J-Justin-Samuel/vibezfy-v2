@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../services/api.js";
 import { useStore } from "../context/store.js";
@@ -9,8 +9,12 @@ export default function SpotifyCallbackPage() {
   const { setSpotifyTokens, setSpotifyProfile } = useStore();
   const [status, setStatus] = useState("Connecting Spotify…");
   const [error, setError] = useState(null);
+  const hasRun = useRef(false);
 
   useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     const errorParam = params.get("error");
