@@ -33,7 +33,6 @@ export default function DetectTab() {
     setCurrentMood,
     lockMood,
     unlockMood,
-    moodLocked,
     spotifyConnected,
     spotifyTokens,
     setCurrentPlaylist,
@@ -42,7 +41,6 @@ export default function DetectTab() {
     addToMoodHistory,
   } = useStore();
 
-  // Load models on mount
   useEffect(() => {
     setModelState(MODEL_STATES.loading);
     loadFaceApiModels()
@@ -67,7 +65,7 @@ export default function DetectTab() {
       }
       setCameraOn(true);
     } catch (e) {
-      setError("Camera access denied. Please allow camera permissions.");
+      setError("Camera access denied. Check your window permissions.");
     }
   }
 
@@ -101,11 +99,9 @@ export default function DetectTab() {
     if (!currentMood) return;
     lockMood(currentMood);
     stopDetection();
-
     const cfg = getMoodConfig(currentMood);
     setAmbientScene(cfg.ambientScene);
 
-    // Save mood to backend
     try {
       const entry = await api.mood.save(currentMood, moodConfidence, {
         detectedVia: "camera",
@@ -119,7 +115,6 @@ export default function DetectTab() {
       );
     } catch (_) {}
 
-    // Fetch Spotify playlist
     if (spotifyConnected && spotifyTokens?.accessToken) {
       setLoadingPlaylist(true);
       try {
@@ -130,12 +125,11 @@ export default function DetectTab() {
         setCurrentPlaylist(data);
         setActiveTab("home");
       } catch (e) {
-        setError("Spotify fetch failed: " + e.message);
+        setError("Spotify payload failed: " + e.message);
       } finally {
         setLoadingPlaylist(false);
       }
     } else {
-      // No Spotify – still navigate with mood
       setActiveTab("home");
     }
   }, [currentMood, moodConfidence, spotifyConnected, spotifyTokens]);
@@ -143,192 +137,156 @@ export default function DetectTab() {
   const moodCfg = currentMood ? getMoodConfig(currentMood) : null;
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-6">
-      <div className="animate-slide-up">
-        <h1 className="font-display font-bold text-2xl text-vib-text">
-          Detect Your Mood
+    <div className="space-y-8 max-w-3xl mx-auto">
+      {/* Banner Component */}
+      <div className="bg-yellow-300 border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000]">
+        <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight">
+          MOOD SCANNER
         </h1>
-        <p className="text-vib-textDim font-body mt-1 text-sm">
-          Point your camera at your face. AI runs locally — no data leaves your
-          device.
+        <p className="font-bold text-sm bg-black text-white inline-block px-2 py-1 mt-2">
+          LOCAL PROCESSING ENGINE — NO PRIVACY LEAKS
         </p>
       </div>
 
       {error && (
-        <div className="bg-red-900/30 border border-red-500/30 text-red-300 text-sm px-4 py-3 rounded-xl animate-fade-in">
-          {error}
+        <div className="bg-red-400 border-4 border-black p-4 font-bold text-sm shadow-[4px_4px_0px_0px_#000]">
+          ⚠ ERROR: {error}
         </div>
       )}
 
-      {/* Model loading indicator */}
+      {/* Model Loading State */}
       {modelState === MODEL_STATES.loading && (
-        <div className="card p-4 flex items-center gap-3 animate-fade-in">
-          <div className="w-5 h-5 border-2 border-vib-accent border-t-transparent rounded-full animate-spin" />
-          <span className="text-vib-textDim text-sm font-body">
-            Loading AI models…
+        <div className="bg-purple-400 border-4 border-black p-4 flex items-center gap-4 shadow-[4px_4px_0px_0px_#000]">
+          <div className="w-6 h-6 border-4 border-black border-t-transparent animate-spin bg-white" />
+          <span className="font-black uppercase tracking-wider">
+            BOOTING COGNITIVE FACE-MODELS...
           </span>
         </div>
       )}
 
-      {/* Camera view */}
-      <div className="card overflow-hidden relative aspect-video animate-scale-in">
+      {/* Main Viewport Container */}
+      <div className="border-4 border-black bg-white p-2 shadow-[8px_8px_0px_0px_#000] relative aspect-video">
         <video
           ref={videoRef}
-          className="w-full h-full object-cover scale-x-[-1]"
+          className="w-full h-full object-cover border-2 border-black scale-x-[-1]"
           muted
           playsInline
           style={{ display: cameraOn ? "block" : "none" }}
         />
 
         {!cameraOn && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-vib-surface">
-            <div className="w-20 h-20 rounded-full border-2 border-dashed border-vib-border flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-vib-muted"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.5}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 10l4.553-2.069A1 1 0 0121 8.876V15a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"
-                />
-              </svg>
-            </div>
-            <p className="text-vib-muted font-body text-sm">Camera inactive</p>
+          <div className="absolute inset-2 bg-zinc-100 border-2 border-dashed border-zinc-400 flex flex-col items-center justify-center p-4">
+            <span className="text-6xl mb-4">📹</span>
+            <p className="font-black text-xl uppercase tracking-tighter text-zinc-500">
+              Lens Offline
+            </p>
           </div>
         )}
 
-        {/* Live mood overlay */}
+        {/* Floating Brutalist Badge */}
         {detecting && currentMood && (
-          <div className="absolute top-3 left-3 glass px-3 py-2 rounded-xl flex items-center gap-2 animate-fade-in">
-            <span className="text-lg">{moodCfg?.emoji}</span>
+          <div className="absolute top-6 left-6 bg-white border-4 border-black p-3 shadow-[4px_4px_0px_0px_#000] flex items-center gap-3">
+            <span className="text-3xl p-1 bg-yellow-300 border-2 border-black">
+              {moodCfg?.emoji}
+            </span>
             <div>
-              <div
-                className={`font-display font-semibold text-sm ${moodCfg?.accentClass}`}
-              >
+              <div className="font-black uppercase text-base tracking-tight">
                 {moodCfg?.label}
               </div>
-              <div className="text-vib-muted text-xs">
-                {Math.round(moodConfidence * 100)}% confidence
+              <div className="font-mono text-xs font-bold text-zinc-600">
+                CONFIDENCE: {Math.round(moodConfidence * 100)}%
               </div>
-            </div>
-            <div className="ml-1 flex gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className="eq-bar"
-                  style={{ animationDelay: `${i * 0.15}s` }}
-                />
-              ))}
             </div>
           </div>
         )}
       </div>
 
-      {/* Controls */}
-      <div className="flex gap-3 animate-slide-up">
+      {/* Interactive Controls Bar */}
+      <div className="flex flex-col sm:flex-row gap-4">
         {!cameraOn ? (
           <button
             onClick={startCamera}
             disabled={modelState !== MODEL_STATES.ready}
-            className="btn-primary flex-1 disabled:opacity-40"
+            className="bg-[#00F0FF] border-4 border-black p-4 text-xl font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none active:bg-cyan-400 transition-all disabled:opacity-40 w-full"
           >
-            Turn On Camera
+            ACTIVATE CAMERA
           </button>
         ) : (
           <>
             {!detecting ? (
-              <button onClick={startDetection} className="btn-primary flex-1">
-                Start Detection
+              <button
+                onClick={startDetection}
+                className="bg-[#FF007A] text-white border-4 border-black p-4 text-xl font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all w-full"
+              >
+                INITIALIZE CAPTURE
               </button>
             ) : (
-              <button onClick={stopDetection} className="btn-ghost flex-1">
-                Pause Detection
+              <button
+                onClick={stopDetection}
+                className="bg-yellow-300 border-4 border-black p-4 text-xl font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all w-full"
+              >
+                HALT DETECTOR
               </button>
             )}
-            <button onClick={stopCamera} className="btn-ghost px-4">
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+            <button
+              onClick={stopCamera}
+              className="bg-white border-4 border-black p-4 font-black shadow-[4px_4px_0px_0px_#000] hover:bg-red-400 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all px-6"
+            >
+              KILL FEED
             </button>
           </>
         )}
       </div>
 
-      {/* Mood meter */}
       {rawDetection && <MoodMeter detection={rawDetection} />}
 
-      {/* Confirm + generate */}
+      {/* Confirmation Block */}
       {currentMood && detecting && (
-        <div
-          className={`card p-5 bg-gradient-to-br ${moodCfg.bgClass} border ${moodCfg.borderClass} animate-scale-in`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{moodCfg.emoji}</span>
-              <div>
-                <div
-                  className={`font-display font-semibold ${moodCfg.accentClass}`}
-                >
-                  Feeling {moodCfg.label}
-                </div>
-                <div className="text-vib-muted text-sm font-body">
-                  {moodCfg.playlistName}
-                </div>
-              </div>
+        <div className="bg-[#A3E635] border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <span className="text-5xl p-2 bg-white border-4 border-black shadow-[3px_3px_0px_0px_#000]">
+              {moodCfg.emoji}
+            </span>
+            <div>
+              <h3 className="font-black text-2xl uppercase tracking-tighter">
+                STATE LOCKED: {moodCfg.label}
+              </h3>
+              <p className="font-mono text-sm uppercase text-black/70 mt-0.5">
+                {moodCfg.playlistName}
+              </p>
             </div>
-            <button
-              onClick={confirmMood}
-              disabled={loadingPlaylist}
-              className="btn-primary disabled:opacity-50"
-            >
-              {loadingPlaylist ? (
-                <span className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-vib-bg border-t-transparent rounded-full animate-spin" />
-                  Building…
-                </span>
-              ) : (
-                "Set My Vibe →"
-              )}
-            </button>
           </div>
+          <button
+            onClick={confirmMood}
+            disabled={loadingPlaylist}
+            className="w-full md:w-auto bg-black text-white font-black uppercase text-lg tracking-wider px-6 py-4 border-4 border-black shadow-[4px_4px_0px_0px_rgba(255,255,255,0.4)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
+          >
+            {loadingPlaylist ? "LOCKING VIBE..." : "DEPLOY VIBE SYSTEM →"}
+          </button>
         </div>
       )}
 
-      {/* Manual override */}
-      <div className="animate-slide-up">
-        <p className="text-vib-muted text-xs font-body mb-3">
-          Or choose your mood manually:
+      {/* Manual Override Board */}
+      <div className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000]">
+        <p className="font-black text-xs uppercase tracking-widest text-zinc-500 mb-4">
+          // CORE MANUAL OVERRIDE DECK
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {ALL_MOODS.map((mood) => {
             const c = getMoodConfig(mood);
+            const isSelected = currentMood === mood;
             return (
               <button
                 key={mood}
-                onClick={() => {
-                  setCurrentMood(mood, 1);
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-display font-medium border transition-all duration-150 ${
-                  currentMood === mood
-                    ? `${c.accentClass} ${c.borderClass} bg-opacity-10`
-                    : "text-vib-muted border-vib-border hover:border-vib-accent/30 hover:text-vib-text"
+                onClick={() => setCurrentMood(mood, 1)}
+                className={`p-3 border-2 border-black font-black uppercase text-xs tracking-tight transition-all text-left flex flex-col justify-between h-20 ${
+                  isSelected
+                    ? "bg-[#00F0FF] shadow-none translate-x-1 translate-y-1"
+                    : "bg-white shadow-[3px_3px_0px_0px_#000] hover:bg-zinc-50 hover:translate-x-0.5 hover:translate-y-0.5"
                 }`}
               >
-                {c.emoji} {c.label}
+                <span className="text-xl">{c.emoji}</span>
+                <span>{c.label}</span>
               </button>
             );
           })}

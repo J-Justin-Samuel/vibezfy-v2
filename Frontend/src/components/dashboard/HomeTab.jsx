@@ -12,122 +12,121 @@ export default function HomeTab() {
     currentPlaylist,
     moodHistory,
   } = useStore();
-  const displayName = userProfile?.displayName || user?.displayName || "there";
-  const firstName = displayName.split(" ")[0];
-
+  const displayName = userProfile?.displayName || user?.displayName || "USER";
+  const firstName = displayName.split(" ")[0].toUpperCase();
   const moodCfg = currentMood ? getMoodConfig(currentMood) : null;
 
   return (
-    <div className="p-8 space-y-8 max-w-4xl mx-auto">
-      {/* Greeting */}
-      <div className="animate-slide-up">
-        <h1 className="font-display font-bold text-3xl text-vib-text">
-          Hey, {firstName} 👋
+    <div className="space-y-8 max-w-4xl mx-auto">
+      {/* Heavy Header */}
+      <div className="bg-[#00F0FF] border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000] relative overflow-hidden">
+        <h1 className="font-black text-4xl md:text-6xl tracking-tighter uppercase">
+          SALUTATIONS, {firstName} ⚡
         </h1>
-        <p className="text-vib-textDim font-body mt-1">
+        <p className="font-black text-sm uppercase bg-black text-white inline-block px-2 py-0.5 mt-2 tracking-wide">
           {currentMood
-            ? `You're feeling ${moodCfg.label.toLowerCase()} right now.`
-            : "Let's detect your mood and set the perfect vibe."}
+            ? `METRIC STATUS: ${moodCfg.label.toUpperCase()}`
+            : "STATUS: UNRESOLVED MOOD MATRIX"}
         </p>
       </div>
 
-      {/* Spotify connect banner */}
       {!spotifyConnected && (
-        <div className="animate-slide-up">
+        <div className="border-4 border-black shadow-[4px_4px_0px_0px_#000]">
           <SpotifyConnect />
         </div>
       )}
 
-      {/* Current mood hero */}
+      {/* Hero Display of Active Vibe */}
       {currentMood && (
-        <div
-          className={`card p-6 bg-gradient-to-br ${moodCfg.bgClass} border ${moodCfg.borderClass} animate-scale-in`}
-        >
-          <div className="flex items-center gap-4">
-            <div className="text-5xl">{moodCfg.emoji}</div>
-            <div>
-              <div className="text-vib-muted text-xs font-body uppercase tracking-widest mb-1">
-                Current Vibe
-              </div>
-              <div
-                className={`font-display font-bold text-2xl ${moodCfg.accentClass}`}
-              >
-                {moodCfg.label}
-              </div>
-              <div className="text-vib-textDim text-sm font-body">
-                {moodCfg.ambientDesc} · {moodCfg.playlistName}
-              </div>
-            </div>
+        <div className="bg-yellow-300 border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000] flex flex-col sm:flex-row items-start sm:items-center gap-6">
+          <div className="text-7xl p-4 bg-white border-4 border-black shadow-[4px_4px_0px_0px_#000] flex-shrink-0">
+            {moodCfg.emoji}
+          </div>
+          <div className="space-y-1 min-w-0">
+            <span className="bg-black text-white px-2 py-0.5 text-xs font-mono uppercase font-black">
+              CURRENT AUDIO EMITTANCE
+            </span>
+            <h2 className="font-black text-3xl md:text-4xl uppercase tracking-tight truncate">
+              {moodCfg.label}
+            </h2>
+            <p className="font-mono text-sm font-bold text-black/70">
+              {moodCfg.ambientDesc} // {moodCfg.playlistName}
+            </p>
           </div>
         </div>
       )}
 
-      {/* Quick actions grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up">
-        <QuickAction
+      {/* Brutalist Matrix Action Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <QuickActionCard
           emoji="🎭"
-          title="Detect Mood"
-          desc="Use your camera for instant detection"
-          accent="text-vib-accent"
+          title="RUN MATRIX SCAN"
+          desc="Initialize localized algorithmic edge mapping."
+          color="bg-[#A3E635]"
           onClick={() => useStore.getState().setActiveTab("detect")}
         />
-        <QuickAction
+        <QuickActionCard
           emoji="📊"
-          title="Weekly Insights"
-          desc="See your mood patterns this week"
-          accent="text-vib-purple"
+          title="WEEKLY METRICS"
+          desc="Analyze temporal pattern clusters over 7 days."
+          color="bg-purple-400"
           onClick={() => useStore.getState().setActiveTab("insights")}
         />
-        <QuickAction
+        <QuickActionCard
           emoji="⏱️"
-          title="Mood Log"
-          desc={`${moodHistory.length} sessions recorded`}
-          accent="text-vib-green"
+          title="TEMPORAL LOGS"
+          desc={`${moodHistory.length} structural captures verified in registry.`}
+          color="bg-[#FF5C00]"
           onClick={() => useStore.getState().setActiveTab("history")}
         />
       </div>
 
-      {/* Current playlist */}
+      {/* Track Layout Array */}
       {currentPlaylist && (
-        <div className="space-y-4 animate-slide-up">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display font-semibold text-lg text-vib-text">
-              Now Playing
+        <div className="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000] space-y-4">
+          <div className="flex justify-between items-end border-b-4 border-black pb-3">
+            <h2 className="font-black text-2xl uppercase tracking-tighter">
+              DATA TRANSMISSION PLAYLIST
             </h2>
-            <span className="text-vib-muted text-sm font-body">
-              {currentPlaylist.tracks?.length} tracks
+            <span className="font-mono bg-black text-[#00F0FF] px-2 py-0.5 text-xs font-bold">
+              {currentPlaylist.tracks?.length} BUFFERS
             </span>
           </div>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-2">
             {currentPlaylist.tracks?.slice(0, 5).map((track, i) => (
-              <MoodCard key={track.id} track={track} index={i} />
+              <div
+                key={track.id}
+                className="border-2 border-black p-1 bg-white hover:bg-zinc-50"
+              >
+                <MoodCard track={track} index={i} />
+              </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Feature blurbs if nothing loaded yet */}
+      {/* Onboarding Blocks fallback */}
       {!currentPlaylist && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-slide-up">
-          <FeatureBlurb
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SystemBlurb
             emoji="🤖"
-            title="AI Mood Detection"
-            desc="face-api.js analyzes your expression in real time — everything runs locally, nothing is sent to a server."
+            title="ENGINE: face-api.js"
+            desc="Deterministic vision analysis running inside local sandboxed engine context. Zero packet escape leaks."
           />
-          <FeatureBlurb
+          <SystemBlurb
             emoji="🎵"
-            title="Curated Lo-Fi Playlists"
-            desc="Spotify recommendations tuned to your exact emotional state via audio feature targeting."
+            title="TARGETING: Audio Matrix"
+            desc="Raw Spotify audio feature recommendations mapping energy levels, acoustic frequency, and valence structures."
           />
-          <FeatureBlurb
+          <SystemBlurb
             emoji="🌌"
-            title="Animated Ambient Scenes"
-            desc="7 unique canvas scenes — rain, aurora, golden hour, and more — shift dynamically with your mood."
+            title="CANVAS: Dynamic Scenes"
+            desc="7 modular hardware accelerated graphic rendering canvases shifting ecosystem color codes automatically."
           />
-          <FeatureBlurb
+          <SystemBlurb
             emoji="📈"
-            title="Mood Insights"
-            desc="Track your emotional patterns over time with beautiful weekly breakdowns and streak counters."
+            title="LOGIC: Pattern Clusters"
+            desc="Structural diagnostic logging analyzing moving averages and stability indicators of your mind state."
           />
         </div>
       )}
@@ -135,32 +134,38 @@ export default function HomeTab() {
   );
 }
 
-function QuickAction({ emoji, title, desc, accent, onClick }) {
+function QuickActionCard({ emoji, title, desc, color, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="card p-5 text-left hover:border-vib-accent/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
+      className={`${color} border-4 border-black p-5 text-left shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none active:translate-x-1.5 active:translate-y-1.5 transition-all flex flex-col justify-between h-48`}
     >
-      <div className="text-2xl mb-3">{emoji}</div>
-      <div className={`font-display font-semibold text-sm ${accent} mb-1`}>
-        {title}
+      <div className="text-3xl p-1 bg-white border-2 border-black inline-block">
+        {emoji}
       </div>
-      <div className="text-vib-muted text-xs font-body leading-relaxed">
-        {desc}
+      <div>
+        <div className="font-black text-base uppercase tracking-tighter leading-none mb-1">
+          {title}
+        </div>
+        <div className="font-mono text-xs font-bold text-black/80 leading-tight">
+          {desc}
+        </div>
       </div>
     </button>
   );
 }
 
-function FeatureBlurb({ emoji, title, desc }) {
+function SystemBlurb({ emoji, title, desc }) {
   return (
-    <div className="card p-5 space-y-2">
-      <div className="text-2xl">{emoji}</div>
-      <div className="font-display font-semibold text-sm text-vib-text">
-        {title}
+    <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_0px_#000] flex gap-4 items-start">
+      <div className="text-3xl p-2 bg-zinc-100 border-2 border-black flex-shrink-0">
+        {emoji}
       </div>
-      <div className="text-vib-muted text-xs font-body leading-relaxed">
-        {desc}
+      <div className="space-y-1">
+        <h4 className="font-black text-sm uppercase tracking-wider">{title}</h4>
+        <p className="font-mono text-xs font-bold text-zinc-600 leading-relaxed">
+          {desc}
+        </p>
       </div>
     </div>
   );

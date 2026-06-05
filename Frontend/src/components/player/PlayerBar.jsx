@@ -34,10 +34,8 @@ export default function PlayerBar() {
   const mood = currentPlaylist?.mood || null;
   const moodCfg = mood ? getMoodConfig(mood) : null;
 
-  // Init Spotify SDK player when tokens available
   useEffect(() => {
     if (!spotifyTokens?.accessToken) return;
-
     const player = initSpotifyPlayer(
       spotifyTokens.accessToken,
       (deviceId, sdkPlayer) => {
@@ -47,13 +45,9 @@ export default function PlayerBar() {
       },
       (err) => setPlayerError(err),
     );
-
-    return () => {
-      player?.disconnect?.();
-    };
+    return () => player?.disconnect?.();
   }, [spotifyTokens?.accessToken]);
 
-  // Play on track change
   useEffect(() => {
     if (!track || !spotifyDeviceId || !spotifyTokens?.accessToken) return;
     const uris = currentPlaylist.tracks.map((t) => t.uri).filter(Boolean);
@@ -67,7 +61,6 @@ export default function PlayerBar() {
       .catch((e) => setPlayerError(e.message));
   }, [currentTrackIndex, spotifyDeviceId]);
 
-  // Progress polling
   useEffect(() => {
     if (!playerRef.current) return;
     clearInterval(intervalRef.current);
@@ -119,56 +112,50 @@ export default function PlayerBar() {
   if (!currentPlaylist && !playerError) return null;
 
   return (
-    <div className="glass border-t border-vib-border px-6 py-3 flex items-center gap-4 z-30 relative">
-      {/* Track info */}
-      <div className="flex items-center gap-3 w-56 flex-shrink-0">
+    <div className="flex flex-col md:flex-row items-center justify-between gap-4 w-full relative">
+      {/* Track Identity Card */}
+      <div className="flex items-center gap-3 w-full md:w-64 flex-shrink-0 bg-white border-2 border-black p-2 shadow-[2px_2px_0px_0px_#000]">
         {track?.albumArt ? (
-          <div className="relative flex-shrink-0">
-            <img
-              src={track.albumArt}
-              alt={track.album}
-              className={`w-10 h-10 rounded-lg object-cover ${isPlaying ? "vinyl-spin" : "vinyl-spin paused"}`}
-            />
-          </div>
+          <img
+            src={track.albumArt}
+            alt={track.album}
+            className={`w-12 h-12 border-2 border-black object-cover flex-shrink-0 ${isPlaying ? "animate-spin [animation-duration:10s]" : ""}`}
+          />
         ) : (
-          <div className="w-10 h-10 rounded-lg bg-vib-surface flex items-center justify-center text-vib-muted">
-            🎵
+          <div className="w-12 h-12 border-2 border-black bg-zinc-200 font-black flex items-center justify-center flex-shrink-0">
+            📻
           </div>
         )}
-        {track ? (
-          <div className="min-w-0">
-            <div className="text-vib-text text-xs font-display font-medium truncate">
-              {track.name}
-            </div>
-            <div className="text-vib-muted text-xs truncate">
-              {track.artists?.join(", ")}
-            </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-black text-xs uppercase tracking-tight truncate text-black">
+            {track ? track.name : "SYSTEM IDLE"}
           </div>
-        ) : (
-          <div className="text-vib-muted text-xs">No track selected</div>
-        )}
+          <div className="font-mono text-[10px] text-zinc-600 font-bold truncate mt-0.5">
+            {track ? track.artists?.join(", ").toUpperCase() : "NO FREQUENCY"}
+          </div>
+        </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex-1 flex flex-col items-center gap-1">
-        <div className="flex items-center gap-4">
-          <ControlBtn onClick={prevTrack} title="Previous">
+      {/* Mid Audio Controls Node */}
+      <div className="flex-1 w-full max-w-xl flex flex-col items-center gap-2">
+        <div className="flex items-center gap-3">
+          <ControlBrutBtn onClick={prevTrack} title="REVERSE">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
             </svg>
-          </ControlBtn>
+          </ControlBrutBtn>
 
           <button
             onClick={togglePlay}
-            className="w-9 h-9 rounded-full bg-vib-accent flex items-center justify-center text-vib-bg hover:brightness-110 transition-all active:scale-95"
+            className="w-12 h-12 bg-white text-black border-4 border-black font-black flex items-center justify-center shadow-[3px_3px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all bg-yellow-300"
           >
             {isPlaying ? (
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
               </svg>
             ) : (
               <svg
-                className="w-4 h-4 ml-0.5"
+                className="w-5 h-5 ml-1"
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
@@ -177,16 +164,16 @@ export default function PlayerBar() {
             )}
           </button>
 
-          <ControlBtn onClick={nextTrack} title="Next">
+          <ControlBrutBtn onClick={nextTrack} title="FORWARD">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M6 18l8.5-6L6 6v12zm2.5-6l5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z" />
             </svg>
-          </ControlBtn>
+          </ControlBrutBtn>
         </div>
 
-        {/* Progress */}
-        <div className="flex items-center gap-2 w-full max-w-sm">
-          <span className="text-vib-muted text-xs font-mono w-8 text-right">
+        {/* Time Progress Scrub Bar */}
+        <div className="flex items-center gap-3 w-full font-mono text-xxs font-black text-black">
+          <span className="w-10 text-right">
             {formatDuration(currentPosition)}
           </span>
           <input
@@ -196,72 +183,58 @@ export default function PlayerBar() {
             step={0.001}
             value={trackProgress || 0}
             onChange={() => {}}
-            className="progress-bar flex-1"
+            className="flex-1 h-4 bg-white border-2 border-black rounded-none appearance-none outline-none cursor-pointer accent-black"
             style={{
-              background: `linear-gradient(to right, #6ee7f7 ${(trackProgress || 0) * 100}%, #1e2d42 ${(trackProgress || 0) * 100}%)`,
+              background: `linear-gradient(to right, #FF007A ${(trackProgress || 0) * 100}%, #ffffff ${(trackProgress || 0) * 100}%)`,
             }}
           />
-          <span className="text-vib-muted text-xs font-mono w-8">
+          <span className="w-10">
             {track ? formatDuration(track.duration) : "0:00"}
           </span>
         </div>
       </div>
 
-      {/* Volume + mood badge */}
-      <div className="flex items-center gap-3 w-44 justify-end flex-shrink-0">
+      {/* Auxiliary Node & Badging */}
+      <div className="w-full md:w-48 flex items-center justify-between md:justify-end gap-3 flex-shrink-0">
         {moodCfg && (
-          <div
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-display ${moodCfg.accentClass} bg-opacity-10`}
-          >
-            {isPlaying && (
-              <div className="flex gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="eq-bar"
-                    style={{ animationDelay: `${i * 0.1}s` }}
-                  />
-                ))}
-              </div>
-            )}
+          <div className="font-black text-xs uppercase tracking-tighter bg-black text-white px-2 py-1 border border-black flex items-center gap-2">
             <span>{moodCfg.emoji}</span>
+            <span className="font-mono text-[10px] tracking-normal">
+              {moodCfg.label}
+            </span>
           </div>
         )}
-        <svg
-          className="w-4 h-4 text-vib-muted flex-shrink-0"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
-        </svg>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={volume}
-          onChange={handleVolumeChange}
-          className="progress-bar w-20"
-          style={{
-            background: `linear-gradient(to right, #6ee7f7 ${volume}%, #1e2d42 ${volume}%)`,
-          }}
-        />
+        <div className="flex items-center gap-2 flex-1 md:flex-initial">
+          <span className="font-mono text-xxs font-bold">VOL</span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={volume}
+            onChange={handleVolumeChange}
+            className="h-3 bg-white border-2 border-black appearance-none rounded-none accent-black w-24"
+            style={{
+              background: `linear-gradient(to right, #A3E635 ${volume}%, #ffffff ${volume}%)`,
+            }}
+          />
+        </div>
       </div>
 
       {playerError && (
-        <div className="absolute bottom-full left-0 right-0 bg-red-900/80 text-red-200 text-xs px-4 py-2 text-center">
-          {playerError} (Spotify Premium required for full playback)
+        <div className="absolute bottom-full left-0 right-0 bg-red-400 border-2 border-black text-black font-mono font-bold text-xxs p-1 text-center">
+          ⚠ FAULT: {playerError} (PREMIUM ACCOUNT CONTEXT MANDATORY)
         </div>
       )}
     </div>
   );
 }
 
-function ControlBtn({ onClick, children, title }) {
+function ControlBrutBtn({ onClick, children, title }) {
   return (
     <button
       onClick={onClick}
       title={title}
-      className="text-vib-muted hover:text-vib-accent transition-colors active:scale-95"
+      className="bg-white text-black border-2 border-black p-2 shadow-[2px_2px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all active:bg-zinc-100"
     >
       {children}
     </button>
