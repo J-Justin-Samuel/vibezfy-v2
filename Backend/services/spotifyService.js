@@ -92,13 +92,22 @@ export async function refreshAccessToken(refreshToken) {
  * Search Spotify tracks by mood query
  * Spotify search limit must be 1–50
  */
-export async function searchTracksByMood(mood, accessToken, limit = 20) {
+export async function searchTracksByMood(mood, accessToken, limit) {
   const config = getMoodConfig(mood);
-  const safeLimit = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
+
+  // Strict, multi-layered integer verification
+  let parsedLimit = parseInt(limit, 10);
+
+  if (isNaN(parsedLimit)) {
+    parsedLimit = 20; // Explicit fallback if front-end sends "" or undefined
+  } else {
+    parsedLimit = Math.min(50, Math.max(1, parsedLimit));
+  }
+
   const query = encodeURIComponent(config.spotifyQuery);
 
   const response = await fetch(
-    `${SPOTIFY_API_BASE}/search?q=${query}&type=track&limit=${safeLimit}&market=US`,
+    `${SPOTIFY_API_BASE}/search?q=${query}&type=track&limit=${parsedLimit}&market=US`,
     {
       headers: { Authorization: `Bearer ${accessToken}` },
     },
@@ -117,7 +126,7 @@ export async function searchTracksByMood(mood, accessToken, limit = 20) {
 /**
  * Get mood-based tracks (search-based, recommendations API deprecated Nov 2024)
  */
-export async function getRecommendationsByMood(mood, accessToken, limit = 20) {
+export async function getRecommendationsByMood(mood, accessToken, limit) {
   return searchTracksByMood(mood, accessToken, limit);
 }
 

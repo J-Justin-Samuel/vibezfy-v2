@@ -128,8 +128,12 @@ export async function refreshToken(req, res, next) {
 export async function getMoodRecommendations(req, res, next) {
   try {
     const { mood } = req.params;
-    const { accessToken } = req.query;
-
+    const { accessToken, limit } = req.query;
+    console.log(
+      "👉 RAW LIMIT RECEIVED FROM FRONTEND:",
+      typeof limit,
+      `"${limit}"`,
+    );
     if (!accessToken) {
       return res.status(400).json({ error: "Spotify access token required" });
     }
@@ -149,10 +153,13 @@ export async function getMoodRecommendations(req, res, next) {
       });
     }
 
+    // Force an evaluation check here before passing to the core service layer
+    const checkedLimit = limit && limit.trim() !== "" ? limit : 20;
+
     const tracks = await spotifyService.getRecommendationsByMood(
       mood,
       accessToken,
-      20,
+      checkedLimit,
     );
     const config = getMoodConfig(mood);
 
