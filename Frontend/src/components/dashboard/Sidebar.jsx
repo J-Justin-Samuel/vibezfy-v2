@@ -1,4 +1,5 @@
 import { useStore } from "../../context/store.js";
+import { useNavigate } from "react-router-dom";
 import { auth, signOut } from "../../services/firebase.js";
 import { clearTokens } from "../../services/spotify.js";
 
@@ -10,13 +11,17 @@ const NAV = [
 ];
 
 export default function Sidebar({ closeMobileMenu }) {
+  const navigate = useNavigate();
   const { activeTab, setActiveTab, user, userProfile, spotifyConnected } =
     useStore();
 
   async function handleSignOut() {
-    if (confirm("TERMINATE ACTIVE USER SESSION?")) {
+    try {
       clearTokens();
       await signOut(auth);
+      navigate("/logout");
+    } catch (e) {
+      console.error("Logout failure scenario triggered: ", e);
     }
   }
 
@@ -32,7 +37,7 @@ export default function Sidebar({ closeMobileMenu }) {
         <span className="font-black text-3xl tracking-tighter block uppercase">
           VIBZFY
         </span>
-        <span className="font-mono text-xxs font-bold text-[#00F0FF] uppercase tracking-widest mt-1 block">
+        <span className="font-mono text-[9px] font-bold text-[#00F0FF] uppercase tracking-widest mt-1 block">
           // FEEL THE VIBE CONTEXT
         </span>
       </div>
@@ -73,7 +78,7 @@ export default function Sidebar({ closeMobileMenu }) {
             spotifyConnected ? "bg-[#A3E635]" : "bg-red-300"
           }`}
         >
-          <div className="w-3 h-3 bg-black border border-white rounded-full flex-shrink-0" />
+          <div className="w-3 h-3 bg-black border border-white rounded-none flex-shrink-0" />
           {spotifyConnected ? "SPOTIFY LINK: ONLINE" : "SPOTIFY LINK: NULL"}
         </div>
       </div>
@@ -87,7 +92,7 @@ export default function Sidebar({ closeMobileMenu }) {
             className="w-10 h-10 border-2 border-black object-cover rounded-none flex-shrink-0"
           />
         ) : (
-          <div className="w-10 h-10 border-2 border-black bg-purple-400 font-black flex items-center justify-center text-sm flex-shrink-0">
+          <div className="w-10 h-10 border-2 border-black bg-purple-400 text-black font-black flex items-center justify-center text-sm flex-shrink-0 rounded-none">
             {initials}
           </div>
         )}
@@ -102,7 +107,7 @@ export default function Sidebar({ closeMobileMenu }) {
         <button
           onClick={handleSignOut}
           title="KILL USER SESSION"
-          className="border-2 border-black bg-white hover:bg-red-400 p-1.5 shadow-[2px_2px_0px_0px_#000] hover:shadow-none transition-all active:translate-y-0.5"
+          className="border-2 border-black bg-white hover:bg-red-400 p-1.5 shadow-[2px_2px_0px_0px_#000] hover:shadow-none transition-all active:translate-y-0.5 rounded-none"
         >
           <svg
             className="w-4 h-4"

@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { useStore } from "./context/store.js";
+import LandingPage from "./pages/LandingPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
+import LogoutPage from "./pages/LogoutPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import SpotifyCallbackPage from "./pages/SpotifyCallbackPage.jsx";
 import LoadingScreen from "./components/ui/LoadingScreen.jsx";
@@ -26,7 +28,9 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Public Landing View */}
+          <Route path="/" element={<LandingPage />} />
+
           <Route
             path="/login"
             element={
@@ -40,6 +44,14 @@ export default function App() {
             element={
               <PublicRoute>
                 <SignupPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/logout"
+            element={
+              <PublicRoute>
+                <LogoutPage />
               </PublicRoute>
             }
           />
