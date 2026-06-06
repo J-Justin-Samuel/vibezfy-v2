@@ -46,45 +46,51 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-vib-bg flex items-center justify-center px-4 relative overflow-hidden">
-      {/* Background blobs */}
-      <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-vib-accent/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-vib-purple/5 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="w-full max-w-md animate-scale-in">
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-vib-accent to-vib-purple flex items-center justify-center text-vib-bg font-display font-bold text-lg">
+    <div className="h-screen w-screen bg-[#FFDE4D] text-black flex items-center justify-center p-4 overflow-hidden selection:bg-black selection:text-[#FFDE4D]">
+      <div className="w-full max-w-md flex flex-col justify-center h-full max-h-[640px]">
+        {/* Brutalist Header / Logo */}
+        <div className="bg-[#FD49A0] border-4 border-black p-3 mb-4 shadow-[4px_4px_0px_0px_#000] flex justify-between items-center transform -rotate-1 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-white border-2 border-black flex items-center justify-center font-black text-xl shadow-[2px_2px_0px_0px_#000]">
               V
             </div>
-            <span className="font-display font-bold text-2xl gradient-text">
+            <span className="font-black text-2xl uppercase tracking-wider">
               Vibzfy
             </span>
           </div>
-          <p className="text-vib-textDim font-body text-sm">
-            Feel the vibe. Own the moment.
-          </p>
+          <span className="font-bold text-[10px] uppercase bg-black text-white px-2 py-0.5">
+            login
+          </span>
         </div>
 
-        <div className="card p-8 space-y-6">
-          <h1 className="font-display font-semibold text-xl text-vib-text">
-            Welcome back
-          </h1>
+        {/* Main Card */}
+        <div className="bg-white border-4 border-black p-5 sm:p-6 shadow-[6px_6px_0px_0px_#000] space-y-4 flex flex-col justify-between overflow-y-auto max-h-full">
+          <div className="border-b-4 border-black pb-2 shrink-0">
+            <h1 className="font-black text-2xl uppercase tracking-tight">
+              Welcome Back.
+            </h1>
+            <p className="text-xs font-bold text-gray-700 uppercase mt-0.5">
+              Feel the vibe. Own the moment.
+            </p>
+          </div>
 
+          {/* Error Banner */}
           {error && (
-            <div className="bg-red-900/30 border border-red-500/30 text-red-300 text-sm px-4 py-3 rounded-xl">
-              {error}
+            <div className="bg-[#FF6B6B] border-4 border-black font-bold p-2 text-xs shadow-[2px_2px_0px_0px_#000] shrink-0">
+              ⚠️ {error}
             </div>
           )}
 
-          {/* Google */}
+          {/* Google Login Button */}
           <button
             onClick={handleGoogle}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-vib-surface border border-vib-border rounded-xl py-3 px-4 text-vib-text font-body font-medium hover:border-vib-accent/50 transition-colors duration-200 disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-3 bg-[#3D52D5] text-white border-4 border-black py-2.5 px-4 font-black uppercase tracking-wider text-xs shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-all disabled:opacity-50 shrink-0"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg
+              className="w-4 h-4 bg-white p-0.5 border border-black shrink-0"
+              viewBox="0 0 24 24"
+            >
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -105,16 +111,23 @@ export default function LoginPage() {
             Continue with Google
           </button>
 
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-vib-border" />
-            <span className="text-vib-muted text-xs font-body">or</span>
-            <div className="flex-1 h-px bg-vib-border" />
+          {/* Divider */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex-1 h-[3px] bg-black" />
+            <span className="font-black text-[10px] uppercase px-1.5 py-0.5 bg-black text-white">
+              OR
+            </span>
+            <div className="flex-1 h-[3px] bg-black" />
           </div>
 
-          <form onSubmit={handleEmail} className="space-y-4">
+          {/* Credentials Form */}
+          <form
+            onSubmit={handleEmail}
+            className="space-y-3 grow flex flex-col justify-center"
+          >
             <div>
-              <label className="block text-vib-textDim text-sm font-body mb-2">
-                Email
+              <label className="block text-xs font-black uppercase tracking-wide mb-1">
+                Email Address
               </label>
               <input
                 type="email"
@@ -122,11 +135,12 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="input-field"
+                className="w-full bg-white border-4 border-black p-2.5 font-bold text-sm placeholder-gray-500 shadow-[3px_3px_0px_0px_#000] focus:outline-none focus:translate-x-[1px] focus:translate-y-[1px] focus:shadow-[2px_2px_0px_0px_#000] transition-all"
               />
             </div>
+
             <div>
-              <label className="block text-vib-textDim text-sm font-body mb-2">
+              <label className="block text-xs font-black uppercase tracking-wide mb-1">
                 Password
               </label>
               <input
@@ -135,24 +149,31 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="input-field"
+                className="w-full bg-white border-4 border-black p-2.5 font-bold text-sm placeholder-gray-500 shadow-[3px_3px_0px_0px_#000] focus:outline-none focus:translate-x-[1px] focus:translate-y-[1px] focus:shadow-[2px_2px_0px_0px_#000] transition-all"
               />
             </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full disabled:opacity-50"
+              className="w-full bg-[#00E676] border-4 border-black py-2.5 font-black uppercase tracking-wider text-sm shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-all disabled:opacity-50 mt-1"
             >
-              {loading ? "Signing in…" : "Sign In"}
+              {loading ? "Signing in…" : "Sign In →"}
             </button>
           </form>
 
-          <p className="text-center text-vib-textDim text-sm font-body">
-            New to Vibzfy?{" "}
-            <Link to="/signup" className="text-vib-accent hover:underline">
-              Create account
-            </Link>
-          </p>
+          {/* Footer Router Link */}
+          <div className="pt-2 text-center border-t-2 border-black shrink-0">
+            <p className="font-bold text-xs uppercase">
+              New to Vibzfy?{" "}
+              <Link
+                to="/signup"
+                className="underline font-black text-[#3D52D5] bg-[#3D52D5]/10 px-1 hover:bg-black hover:text-white transition-colors"
+              >
+                Create account
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
