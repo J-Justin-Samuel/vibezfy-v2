@@ -52,18 +52,26 @@ export default function SpotifyCallbackPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-vib-bg flex items-center justify-center">
-      <div className="card p-10 text-center space-y-4 max-w-sm w-full mx-4">
+    <div className="min-h-screen bg-[#1ED760] text-black flex items-center justify-center p-4 selection:bg-black selection:text-[#1ED760]">
+      <div className="bg-white border-4 border-black p-8 text-center space-y-6 max-w-sm w-full shadow-[8px_8px_0px_0px_#000]">
         {error ? (
           <>
-            <div className="text-4xl">❌</div>
-            <p className="text-red-400 font-body">{error}</p>
-            <p className="text-vib-muted text-sm">Redirecting back…</p>
+            <div className="inline-block bg-[#FF6B6B] text-black border-4 border-black font-black text-4xl p-4 transform -rotate-3 shadow-[4px_4px_0px_0px_#000]">
+              ERR!
+            </div>
+            <p className="font-black text-sm uppercase tracking-wide text-red-600">
+              {error}
+            </p>
+            <p className="bg-black text-white py-1 text-xs font-mono uppercase tracking-widest animate-pulse">
+              Redirecting back…
+            </p>
           </>
         ) : (
           <>
-            <div className="w-12 h-12 rounded-full border-2 border-vib-accent border-t-transparent animate-spin mx-auto" />
-            <p className="text-vib-text font-display font-medium">{status}</p>
+            <div className="w-14 h-14 border-4 border-black border-t-[#1ED760] bg-black animate-spin mx-auto shadow-[4px_4px_0px_0px_#000]" />
+            <p className="text-black font-black text-xl uppercase tracking-tight bg-[#FFDE4D] py-2 border-2 border-black transform rotate-1">
+              {status}
+            </p>
           </>
         )}
       </div>
