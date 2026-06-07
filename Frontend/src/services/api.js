@@ -50,9 +50,9 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ refreshToken }),
       }),
-    getRecommendations: (mood, accessToken) =>
+    getRecommendations: (mood, accessToken, limit = 5) =>
       request(
-        `/api/spotify/recommendations/${mood}?accessToken=${encodeURIComponent(accessToken)}`,
+        `/api/spotify/recommendations/${mood}?accessToken=${encodeURIComponent(accessToken)}&limit=${limit}`,
       ),
     createPlaylist: (body) =>
       request("/api/spotify/playlist", {
