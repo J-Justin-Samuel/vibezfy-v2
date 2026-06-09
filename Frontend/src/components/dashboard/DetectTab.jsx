@@ -154,7 +154,6 @@ export default function DetectTab() {
         </div>
       )}
 
-      {/* Model Loading State */}
       {modelState === MODEL_STATES.loading && (
         <div className="bg-purple-400 border-4 border-black p-4 flex items-center gap-4 shadow-[4px_4px_0px_0px_#000]">
           <div className="w-6 h-6 border-4 border-black border-t-transparent animate-spin bg-white" />
@@ -202,69 +201,71 @@ export default function DetectTab() {
       </div>
 
       {/* Interactive Controls Bar */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        {!cameraOn ? (
-          <button
-            onClick={startCamera}
-            disabled={modelState !== MODEL_STATES.ready}
-            className="bg-[#00F0FF] border-4 border-black p-4 text-xl font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none active:bg-cyan-400 transition-all disabled:opacity-40 w-full"
-          >
-            ACTIVATE CAMERA
-          </button>
-        ) : (
-          <>
-            {!detecting ? (
-              <button
-                onClick={startDetection}
-                className="bg-[#FF007A] text-white border-4 border-black p-4 text-xl font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all w-full"
-              >
-                INITIALIZE CAPTURE
-              </button>
-            ) : (
-              <button
-                onClick={stopDetection}
-                className="bg-yellow-300 border-4 border-black p-4 text-xl font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all w-full"
-              >
-                HALT DETECTOR
-              </button>
-            )}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          {!cameraOn ? (
             <button
-              onClick={stopCamera}
-              className="bg-white border-4 border-black p-4 font-black shadow-[4px_4px_0px_0px_#000] hover:bg-red-400 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all px-6"
+              onClick={startCamera}
+              disabled={modelState !== MODEL_STATES.ready}
+              className="bg-[#00F0FF] border-4 border-black p-4 text-xl font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none active:bg-cyan-400 transition-all disabled:opacity-40 w-full"
             >
-              KILL FEED
+              ACTIVATE CAMERA
             </button>
-          </>
+          ) : (
+            <>
+              {!detecting ? (
+                <button
+                  onClick={startDetection}
+                  className="bg-[#FF007A] text-white border-4 border-black p-4 text-xl font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all w-full"
+                >
+                  INITIALIZE CAPTURE
+                </button>
+              ) : (
+                <button
+                  onClick={stopDetection}
+                  className="bg-yellow-300 border-4 border-black p-4 text-xl font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all w-full"
+                >
+                  HALT DETECTOR
+                </button>
+              )}
+              <button
+                onClick={stopCamera}
+                className="bg-white border-4 border-black p-4 font-black shadow-[4px_4px_0px_0px_#000] hover:bg-red-400 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all px-6"
+              >
+                KILL FEED
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Confirmation Block Fixed Directly Below Control Buttons */}
+        {currentMood && detecting && (
+          <div className="bg-[#A3E635] border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-4">
+              <span className="text-5xl p-2 bg-white border-4 border-black shadow-[3px_3px_0px_0px_#000]">
+                {moodCfg.emoji}
+              </span>
+              <div>
+                <h3 className="font-black text-2xl uppercase tracking-tighter">
+                  STATE LOCKED: {moodCfg.label}
+                </h3>
+                <p className="font-mono text-sm uppercase text-black/70 mt-0.5">
+                  {moodCfg.playlistName}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={confirmMood}
+              disabled={loadingPlaylist}
+              className="w-full md:w-auto bg-black text-white font-black uppercase text-lg tracking-wider px-6 py-4 border-4 border-black shadow-[4px_4px_0px_0px_rgba(255,255,255,0.4)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
+            >
+              {loadingPlaylist ? "LOCKING VIBE..." : "DEPLOY VIBE SYSTEM →"}
+            </button>
+          </div>
         )}
       </div>
 
       {rawDetection && <MoodMeter detection={rawDetection} />}
-
-      {/* Confirmation Block */}
-      {currentMood && detecting && (
-        <div className="bg-[#A3E635] border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="text-5xl p-2 bg-white border-4 border-black shadow-[3px_3px_0px_0px_#000]">
-              {moodCfg.emoji}
-            </span>
-            <div>
-              <h3 className="font-black text-2xl uppercase tracking-tighter">
-                STATE LOCKED: {moodCfg.label}
-              </h3>
-              <p className="font-mono text-sm uppercase text-black/70 mt-0.5">
-                {moodCfg.playlistName}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={confirmMood}
-            disabled={loadingPlaylist}
-            className="w-full md:w-auto bg-black text-white font-black uppercase text-lg tracking-wider px-6 py-4 border-4 border-black shadow-[4px_4px_0px_0px_rgba(255,255,255,0.4)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
-          >
-            {loadingPlaylist ? "LOCKING VIBE..." : "DEPLOY VIBE SYSTEM →"}
-          </button>
-        </div>
-      )}
 
       {/* Manual Override Board */}
       <div className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000]">

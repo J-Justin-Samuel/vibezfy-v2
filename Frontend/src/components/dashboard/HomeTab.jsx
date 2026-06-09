@@ -31,7 +31,7 @@ export default function HomeTab() {
 
   return (
     <div
-      className="min-h-screen w-full px-4 py-6 md:px-8 md:py-10 space-y-6"
+      className="min-h-screen w-full px-4 py-6 md:px-8 md:py-10 space-y-8"
       style={{
         background: "#FFFBEF",
         fontFamily: "'Courier New', Courier, monospace",
@@ -146,35 +146,73 @@ export default function HomeTab() {
         </div>
       )}
 
-      {/* ── QUICK ACTION CARDS ────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <QuickActionCard
-          label="01"
-          title="START A SCAN"
-          desc="Point your camera and let Vibzfy read your mood in seconds."
-          bg={ACCENT.pink}
-          textColor="#fff"
-          shadowColor="#000"
+      {/* ── QUICK ACTION ACTIONS AREA ─────────────────── */}
+      <div className="space-y-4">
+        {/* HERO ACTION ROW: START A SCAN */}
+        <button
           onClick={() => useStore.getState().setActiveTab("detect")}
-        />
-        <QuickActionCard
-          label="02"
-          title="WEEKLY METRICS"
-          desc="See how your mood has shifted over the last 7 days."
-          bg={ACCENT.blue}
-          textColor="#fff"
-          shadowColor={ACCENT.yellow}
-          onClick={() => useStore.getState().setActiveTab("insights")}
-        />
-        <QuickActionCard
-          label="03"
-          title="MOOD HISTORY"
-          desc={`${moodHistory.length} structural captures in registry.`}
-          bg={ACCENT.orange}
-          textColor="#fff"
-          shadowColor={ACCENT.pink}
-          onClick={() => useStore.getState().setActiveTab("history")}
-        />
+          className="group border-4 border-black p-6 md:p-8 text-left flex flex-col md:flex-row md:items-center justify-between min-h-36 w-full relative overflow-hidden transition-all hover:translate-x-1 hover:translate-y-1 active:translate-x-2 active:translate-y-2"
+          style={{
+            background: ACCENT.pink,
+            color: "#fff",
+            boxShadow: "10px 10px 0 0 #000",
+          }}
+        >
+          {/* Animated background lines on hover */}
+          <div
+            className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none duration-200"
+            style={{
+              backgroundImage: `repeating-linear-gradient(
+                -45deg,
+                #fff 0px, #fff 10px,
+                transparent 10px, transparent 20px
+              )`,
+            }}
+          />
+
+          <div className="space-y-2 max-w-xl relative z-10">
+            <div
+              className="text-xs font-black uppercase tracking-widest px-2 py-0.5 border-2 border-black w-fit flex items-center gap-1.5"
+              style={{ background: ACCENT.cyan, color: "#000" }}
+            >
+              <span className="inline-block w-2 h-2 rounded-full bg-black animate-ping" />
+              SYSTEM CORE INIT // 01
+            </div>
+            <h3 className="font-black text-3xl md:text-5xl uppercase tracking-tighter leading-none group-hover:text-black transition-colors">
+              START A LIVE SCAN →
+            </h3>
+            <p className="text-xs md:text-sm font-bold text-white/90 leading-snug font-mono">
+              Boot up your local hardware imaging lens. Analyze real-time
+              neurological clusters to isolate pop frequencies.
+            </p>
+          </div>
+
+          <div className="mt-4 md:mt-0 font-black text-6xl md:text-8xl select-none opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all font-sans leading-none">
+            📸
+          </div>
+        </button>
+
+        {/* SECONDARY ROW: METRICS & HISTORY */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <QuickActionCard
+            label="02"
+            title="WEEKLY METRICS"
+            desc="See how your mood has shifted over the last 7 days."
+            bg={ACCENT.blue}
+            textColor="#fff"
+            shadowColor={ACCENT.yellow}
+            onClick={() => useStore.getState().setActiveTab("insights")}
+          />
+          <QuickActionCard
+            label="03"
+            title="MOOD HISTORY"
+            desc={`${moodHistory.length} structural captures in registry.`}
+            bg={ACCENT.orange}
+            textColor="#fff"
+            shadowColor={ACCENT.pink}
+            onClick={() => useStore.getState().setActiveTab("history")}
+          />
+        </div>
       </div>
 
       {/* ── PLAYLIST ──────────────────────────────────── */}

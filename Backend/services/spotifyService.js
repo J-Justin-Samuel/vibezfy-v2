@@ -4,12 +4,10 @@ import { getMoodConfig } from "../config/moodConfig.js";
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SPOTIFY_API_BASE = "https://api.spotify.com/v1";
 
-// Safe JSON parser – avoids crashes on empty Spotify responses
 async function parseJSON(response) {
   const text = await response.text();
-  if (!text || text.trim() === "") {
+  if (!text || text.trim() === "")
     throw new Error("Empty response from Spotify");
-  }
   try {
     return JSON.parse(text);
   } catch {
@@ -18,7 +16,7 @@ async function parseJSON(response) {
 }
 
 /**
- * Exchange auth code for access + refresh tokens
+ * Exchange auth code for tokens
  */
 export async function exchangeCode(code, redirectUri) {
   const credentials = Buffer.from(
@@ -39,10 +37,8 @@ export async function exchangeCode(code, redirectUri) {
   });
 
   const data = await parseJSON(response);
-
-  if (!response.ok) {
-    throw new Error(data.error_description || "Spotify token exchange failed");
-  }
+  if (!response.ok)
+    throw new Error(data.error_description || "Token exchange failed");
 
   return {
     accessToken: data.access_token,
@@ -55,7 +51,7 @@ export async function exchangeCode(code, redirectUri) {
 }
 
 /**
- * Refresh an expired access token
+ * Refresh expired access token
  */
 export async function refreshAccessToken(refreshToken) {
   const credentials = Buffer.from(
@@ -75,10 +71,8 @@ export async function refreshAccessToken(refreshToken) {
   });
 
   const data = await parseJSON(response);
-
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(data.error_description || "Token refresh failed");
-  }
 
   return {
     accessToken: data.access_token,
@@ -89,66 +83,85 @@ export async function refreshAccessToken(refreshToken) {
 }
 
 /**
- * Search Spotify tracks by mood query
- * Spotify search limit must be 1–50
+ * Fetch top tracks for a single artist (max 10 from Spotify)
  */
-export async function searchTracksByMood(mood, accessToken, limit) {
-  const config = getMoodConfig(mood);
-
-  // Strict, multi-layered integer verification
-  let parsedLimit = parseInt(limit, 10);
-
-  if (isNaN(parsedLimit)) {
-    parsedLimit = 20; // Explicit fallback if front-end sends "" or undefined
-  } else {
-    parsedLimit = Math.min(50, Math.max(1, parsedLimit));
-  }
-
-  const query = encodeURIComponent(config.spotifyQuery);
-
+async function getArtistTopTracks(artistId, accessToken) {
   const response = await fetch(
-    `${SPOTIFY_API_BASE}/search?q=${query}&type=track&limit=${parsedLimit}&market=US`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
+    `${SPOTIFY_API_BASE}/artists/${artistId}/top-tracks?market=US`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
   );
-
   const data = await parseJSON(response);
-
   if (!response.ok) {
-    console.error("Spotify search error full response:", JSON.stringify(data));
-    throw new Error(data.error?.message || "Spotify search failed");
+    console.warn(
+      `Failed to fetch tracks for artist ${artistId}:`,
+      data.error?.message,
+    );
+    return [];
   }
-
-  return data.tracks?.items || [];
+  return data.tracks || [];
 }
 
 /**
- * Get mood-based tracks (search-based, recommendations API deprecated Nov 2024)
+ * Get mood-based tracks by fetching top tracks from each seeded artist.
+ * Returns a shuffled mix of their most popular songs.
  */
-export async function getRecommendationsByMood(mood, accessToken, limit) {
+export async function searchTracksByMood(mood, accessToken, limit = 20) {
+  const config = getMoodConfig(mood);
+  const artistIds = config.artistIds || [];
+
+  if (artistIds.length === 0) {
+    throw new Error(`No artist IDs configured for mood: ${mood}`);
+  }
+
+  // Fetch top tracks from all artists in parallel
+  const results = await Promise.all(
+    artistIds.map((id) => getArtistTopTracks(id, accessToken)),
+  );
+
+  // Flatten and deduplicate by track ID
+  const seen = new Set();
+  const tracks = [];
+
+  for (const artistTracks of results) {
+    for (const track of artistTracks) {
+      if (!seen.has(track.id) && track.name) {
+        seen.add(track.id);
+        tracks.push(track);
+      }
+    }
+  }
+
+  // Shuffle for variety
+  for (let i = tracks.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
+  }
+
+  return tracks.slice(0, limit);
+}
+
+/**
+ * Alias for controller compatibility
+ */
+export async function getRecommendationsByMood(mood, accessToken, limit = 20) {
   return searchTracksByMood(mood, accessToken, limit);
 }
 
 /**
- * Get current user's Spotify profile
+ * Get Spotify user profile
  */
 export async function getSpotifyProfile(accessToken) {
   const response = await fetch(`${SPOTIFY_API_BASE}/me`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-
   const data = await parseJSON(response);
-
-  if (!response.ok) {
-    throw new Error(data.error?.message || "Failed to fetch Spotify profile");
-  }
-
+  if (!response.ok)
+    throw new Error(data.error?.message || "Failed to fetch profile");
   return data;
 }
 
 /**
- * Create a playlist on the user's Spotify account and add tracks
+ * Create a playlist and add tracks
  */
 export async function createSpotifyPlaylist(
   userId,
@@ -173,9 +186,8 @@ export async function createSpotifyPlaylist(
   );
 
   const playlist = await parseJSON(createRes);
-  if (!createRes.ok) {
+  if (!createRes.ok)
     throw new Error(playlist.error?.message || "Failed to create playlist");
-  }
 
   if (trackUris.length > 0) {
     await fetch(`${SPOTIFY_API_BASE}/playlists/${playlist.id}/tracks`, {
