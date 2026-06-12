@@ -6,21 +6,24 @@ let firebaseApp;
 
 function initFirebase() {
   if (firebaseApp) return firebaseApp;
-
   try {
-    const keyPath = resolve(
-      process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
-        "./config/serviceAccountKey.json",
-    );
+    let serviceAccount;
 
-    if (!existsSync(keyPath)) {
-      console.warn(
-        "⚠️  Firebase service account key not found. Firestore features disabled.",
+    // Production: read from env var
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    } else {
+      // Development: read from file
+      const keyPath = resolve(
+        process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
+          "./config/serviceAccountKey.json",
       );
-      return null;
+      if (!existsSync(keyPath)) {
+        console.warn("⚠️  Firebase service account key not found.");
+        return null;
+      }
+      serviceAccount = JSON.parse(readFileSync(keyPath, "utf8"));
     }
-
-    const serviceAccount = JSON.parse(readFileSync(keyPath, "utf8"));
 
     firebaseApp = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
