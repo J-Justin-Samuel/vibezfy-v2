@@ -11,7 +11,7 @@ export default function LoadingScreen() {
 
       <div className="space-y-2 text-center bg-black border-4 border-white p-4 max-w-xs shadow-[6px_6px_0px_0px_#FD49A0]">
         <div className="font-black text-3xl uppercase tracking-widest text-[#00E676]">
-          Vibzfy
+          Vibezfy
         </div>
         <div className="text-white text-xs font-mono uppercase tracking-wider animate-pulse">
           // Loading your vibe…

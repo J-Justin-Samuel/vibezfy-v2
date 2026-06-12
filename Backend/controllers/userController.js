@@ -11,7 +11,7 @@ export async function getProfile(req, res, next) {
       return res.json({
         uid,
         email,
-        displayName: name || email?.split("@")[0] || "Vibzfy User",
+        displayName: name || email?.split("@")[0] || "Vibezfy User",
         photoURL: picture || null,
         spotifyConnected: false,
         createdAt: new Date().toISOString(),
@@ -26,7 +26,7 @@ export async function getProfile(req, res, next) {
       const newProfile = {
         uid,
         email: email || null,
-        displayName: name || email?.split("@")[0] || "Vibzfy User",
+        displayName: name || email?.split("@")[0] || "Vibezfy User",
         photoURL: picture || null,
         preferences: {
           defaultAmbient: "cozy_library",

@@ -58,7 +58,7 @@ export default function HomeTab() {
             className="inline-block text-[10px] font-black uppercase tracking-widest px-2 py-1 border-2 border-black mb-3"
             style={{ background: ACCENT.pink, color: "#fff" }}
           >
-            // VIBZFY DASHBOARD //
+            // VIBEZFY DASHBOARD //
           </div>
           <h1 className="font-black text-4xl md:text-6xl tracking-tighter uppercase leading-none">
             SALUTATIONS,
@@ -290,7 +290,7 @@ export default function HomeTab() {
         className="border-4 border-black px-4 py-3 flex items-center justify-between text-[10px] font-black uppercase tracking-widest"
         style={{ background: "#000", color: ACCENT.yellow }}
       >
-        <span>VIBZFY // v1.0.26</span>
+        <span>VIBEZFY // v1.0.26</span>
         <span className="flex items-center gap-2">
           <span
             className="inline-block w-2 h-2 animate-pulse"

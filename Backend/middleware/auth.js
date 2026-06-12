@@ -19,7 +19,7 @@ export async function verifyToken(req, res, next) {
     if (!auth) {
       // Firebase not configured – allow in dev with mock user
       if (process.env.NODE_ENV === "development") {
-        req.user = { uid: "dev-user", email: "dev@vibzfy.app" };
+        req.user = { uid: "dev-user", email: "dev@vibezfy.app" };
         return next();
       }
       return res.status(503).json({ error: "Auth service unavailable" });

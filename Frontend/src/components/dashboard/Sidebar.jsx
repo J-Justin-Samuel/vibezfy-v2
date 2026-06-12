@@ -35,7 +35,7 @@ export default function Sidebar({ closeMobileMenu }) {
       {/* Brand Deck */}
       <div className="hidden lg:block border-4 border-black bg-black text-white p-4 text-center shadow-[4px_4px_0px_0px_#FF5C00] mb-6">
         <span className="font-black text-3xl tracking-tighter block uppercase">
-          VIBZFY
+          VIBEZFY
         </span>
         <span className="font-mono text-[9px] font-bold text-[#00F0FF] uppercase tracking-widest mt-1 block">
           // FEEL THE VIBE CONTEXT

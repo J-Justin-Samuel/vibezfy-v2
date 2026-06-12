@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useStore } from "../../context/store.js";
 import { getMoodConfig } from "../../utils/moodConfig.js";
 import {
@@ -28,17 +28,21 @@ export default function PlayerBar() {
   const [playerError, setPlayerError] = useState(null);
   const [isPremium, setIsPremium] = useState(true);
   const [currentPosition, setCurrentPosition] = useState(0);
+  const [previewMode, setPreviewMode] = useState(false);
+
   const playerRef = useRef(null);
-  const audioRef = useRef(null); // fallback for non-Premium
+  const audioRef = useRef(null);
   const intervalRef = useRef(null);
+  const hasInitialized = useRef(false);
 
   const track = currentPlaylist?.tracks?.[currentTrackIndex] || null;
   const mood = currentPlaylist?.mood || null;
   const moodCfg = mood ? getMoodConfig(mood) : null;
 
-  // Init Spotify SDK player when tokens available
+  // ── Init Spotify SDK ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!spotifyTokens?.accessToken) return;
+    if (!spotifyTokens?.accessToken || hasInitialized.current) return;
+    hasInitialized.current = true;
 
     initSpotifyPlayer(
       spotifyTokens.accessToken,
@@ -47,134 +51,193 @@ export default function PlayerBar() {
         setSpotifyPlayer(sdkPlayer);
         playerRef.current = sdkPlayer;
         setPlayerError(null);
+        setIsPremium(true);
+        setPreviewMode(false);
 
-        // Listen for player state changes
         sdkPlayer.addListener("player_state_changed", (state) => {
           if (!state) return;
           setIsPlaying(!state.paused);
           setCurrentPosition(state.position);
-          setTrackProgress(state.position / state.duration);
-
-          // Auto advance to next track
-          if (
-            state.paused &&
-            state.position === 0 &&
-            state.restrictions?.disallow_resuming_reasons
-          ) {
-            nextTrack();
-          }
+          if (state.duration > 0)
+            setTrackProgress(state.position / state.duration);
         });
       },
       (err) => {
-        if (err.includes("Premium")) {
-          setIsPremium(false);
-          setPlayerError(null);
-        } else {
-          setPlayerError(err);
-        }
+        console.warn("SDK error:", err);
+        setIsPremium(false);
+        setPreviewMode(true);
+        setPlayerError(null);
       },
     );
   }, [spotifyTokens?.accessToken]);
 
-  // Handle track change
-  useEffect(() => {
-    if (!track) return;
+  // ── Find next track with preview ────────────────────────────────────────────
+  const findNextWithPreview = useCallback(
+    (startIndex) => {
+      if (!currentPlaylist?.tracks) return -1;
+      const tracks = currentPlaylist.tracks;
+      for (let i = startIndex; i < tracks.length; i++) {
+        if (tracks[i].previewUrl) return i;
+      }
+      for (let i = 0; i < startIndex; i++) {
+        if (tracks[i].previewUrl) return i;
+      }
+      return -1;
+    },
+    [currentPlaylist],
+  );
 
-    if (isPremium && spotifyDeviceId && spotifyTokens?.accessToken) {
-      const uris = currentPlaylist.tracks.map((t) => t.uri).filter(Boolean);
-      if (uris.length === 0) return;
-      playTracks(
-        spotifyDeviceId,
-        uris.slice(currentTrackIndex),
-        spotifyTokens.accessToken,
-      )
-        .then(() => setIsPlaying(true))
-        .catch((e) => {
-          setPlayerError(e.message);
-          setIsPremium(false);
-          playPreview(track);
-        });
-    } else {
-      playPreview(track);
-    }
-  }, [currentTrackIndex, spotifyDeviceId, isPremium]);
+  // ── Play audio preview ──────────────────────────────────────────────────────
+  const playPreview = useCallback(
+    (t) => {
+      if (!audioRef.current) return;
 
-  function playPreview(t) {
-    if (!t?.previewUrl) {
-      setPlayerError(
-        "NO PREVIEW AVAILABLE FOR THIS TRACK. SPOTIFY PREMIUM REQUIRED FOR FULL PLAYBACK.",
-      );
-      return;
-    }
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = t.previewUrl;
-      audioRef.current.volume = volume / 100;
-      audioRef.current
+      if (!t?.previewUrl) {
+        const nextIdx = findNextWithPreview(currentTrackIndex + 1);
+        if (nextIdx !== -1) {
+          console.log("No preview for this track, skipping to index:", nextIdx);
+          setCurrentTrackIndex(nextIdx);
+        } else {
+          setPlayerError(
+            "NO PREVIEWS AVAILABLE IN THIS PLAYLIST. SPOTIFY PREMIUM REQUIRED FOR FULL PLAYBACK.",
+          );
+        }
+        return;
+      }
+
+      const audio = audioRef.current;
+      audio.pause();
+      audio.src = t.previewUrl;
+      audio.volume = volume / 100;
+      audio.load();
+      audio
         .play()
         .then(() => {
           setIsPlaying(true);
           setPlayerError(null);
         })
-        .catch((e) => setPlayerError("PREVIEW PLAYBACK FAILED: " + e.message));
-    }
-  }
+        .catch((e) => {
+          console.error("Preview play error:", e);
+          setPlayerError("PREVIEW PLAYBACK FAILED. TRY CLICKING PLAY AGAIN.");
+        });
+    },
+    [volume, currentTrackIndex, findNextWithPreview],
+  );
 
-  // Progress polling for premium player
+  // ── Handle track change ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!playerRef.current || !isPremium) return;
-    clearInterval(intervalRef.current);
-    if (isPlaying) {
-      intervalRef.current = setInterval(async () => {
-        try {
-          const state = await playerRef.current.getCurrentState();
-          if (state) {
-            setCurrentPosition(state.position);
-            setTrackProgress(state.position / state.duration);
-          }
-        } catch (_) {}
-      }, 1000);
-    }
-    return () => clearInterval(intervalRef.current);
-  }, [isPlaying, isPremium]);
+    if (!track || !currentPlaylist) return;
+    setCurrentPosition(0);
+    setTrackProgress(0);
 
-  // Audio element progress for preview fallback
+    if (
+      isPremium &&
+      !previewMode &&
+      spotifyDeviceId &&
+      spotifyTokens?.accessToken
+    ) {
+      const uris = currentPlaylist.tracks.map((t) => t.uri).filter(Boolean);
+      if (uris.length === 0) return;
+
+      playTracks(
+        spotifyDeviceId,
+        uris.slice(currentTrackIndex),
+        spotifyTokens.accessToken,
+      )
+        .then(() => {
+          setIsPlaying(true);
+          setPlayerError(null);
+        })
+        .catch((e) => {
+          console.warn(
+            "Premium playback failed, switching to preview:",
+            e.message,
+          );
+          setIsPremium(false);
+          setPreviewMode(true);
+          playPreview(track);
+        });
+    } else {
+      playPreview(track);
+    }
+  }, [currentTrackIndex, currentPlaylist?.mood]);
+
+  // ── Audio element event listeners ───────────────────────────────────────────
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const onTimeUpdate = () => {
-      setCurrentPosition(audio.currentTime * 1000);
-      setTrackProgress(audio.currentTime / audio.duration || 0);
+      if (audio.duration) {
+        setCurrentPosition(audio.currentTime * 1000);
+        setTrackProgress(audio.currentTime / audio.duration);
+      }
     };
-    const onEnded = () => nextTrack();
+
+    const onEnded = () => {
+      if (currentPlaylist) {
+        const next = (currentTrackIndex + 1) % currentPlaylist.tracks.length;
+        setCurrentTrackIndex(next);
+      }
+    };
+
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
+    const onError = () => {
+      if (currentPlaylist) {
+        const next = findNextWithPreview(currentTrackIndex + 1);
+        if (next !== -1) setCurrentTrackIndex(next);
+      }
+    };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("ended", onEnded);
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
+    audio.addEventListener("error", onError);
 
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("error", onError);
     };
-  }, []);
+  }, [currentTrackIndex, currentPlaylist, findNextWithPreview]);
 
+  // ── Premium progress polling ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!playerRef.current || !isPremium || previewMode) return;
+    clearInterval(intervalRef.current);
+
+    if (isPlaying) {
+      intervalRef.current = setInterval(async () => {
+        try {
+          const state = await playerRef.current.getCurrentState();
+          if (state) {
+            setCurrentPosition(state.position);
+            if (state.duration > 0)
+              setTrackProgress(state.position / state.duration);
+          }
+        } catch (_) {}
+      }, 1000);
+    }
+
+    return () => clearInterval(intervalRef.current);
+  }, [isPlaying, isPremium, previewMode]);
+
+  // ── Toggle play/pause ────────────────────────────────────────────────────────
   async function togglePlay() {
-    if (isPremium && playerRef.current) {
+    if (isPremium && !previewMode && playerRef.current) {
       await playerRef.current.togglePlay();
     } else if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        if (!audioRef.current.src && track?.previewUrl) {
-          playPreview(track);
+        if (audioRef.current.src) {
+          audioRef.current.play().catch(() => playPreview(track));
         } else {
-          audioRef.current.play();
+          playPreview(track);
         }
       }
     }
@@ -199,32 +262,34 @@ export default function PlayerBar() {
     const v = parseInt(e.target.value);
     setVolume(v);
     if (audioRef.current) audioRef.current.volume = v / 100;
-    if (isPremium && spotifyDeviceId && spotifyTokens?.accessToken) {
+    if (
+      isPremium &&
+      !previewMode &&
+      spotifyDeviceId &&
+      spotifyTokens?.accessToken
+    ) {
       await setSpotifyVolume(spotifyDeviceId, v, spotifyTokens.accessToken);
     }
   }
 
-  if (!currentPlaylist && !playerError) return null;
+  if (!currentPlaylist) return null;
 
-  const trackDuration = isPremium
-    ? track?.duration
-    : track?.previewUrl
-      ? 30000
-      : track?.duration;
+  const isPreviewTrack = !isPremium || previewMode;
+  const trackDuration =
+    isPreviewTrack && track?.previewUrl ? 30000 : track?.duration || 0;
 
   return (
     <>
-      {/* Hidden audio element for preview fallback */}
       <audio ref={audioRef} preload="none" />
 
       <div className="w-full bg-[#FFFDF6] border-t-4 border-black px-4 py-4 md:py-3 flex flex-col md:flex-row items-center gap-4 z-30 relative selection:bg-black selection:text-[#FFDE4D]">
-        {/* Track info container */}
+        {/* Track info block */}
         <div className="flex items-center gap-3 w-full md:w-60 shrink-0 border-b-2 md:border-b-0 pb-3 md:pb-0 border-black">
           {track?.albumArt ? (
             <img
               src={track.albumArt}
-              alt={track.album}
-              className={`w-12 h-12 border-2 border-black object-cover shrink-0 rounded-none shadow-[2px_2px_0px_0px_#000] ${isPlaying ? "animate-spin [animation-duration:8s]" : ""}`}
+              alt={track?.album}
+              className={`w-12 h-12 border-2 border-black object-cover shrink-0 rounded-none shadow-[2px_2px_0px_0px_#000] ${isPlaying ? "animate-spin [animation-duration:10s]" : ""}`}
             />
           ) : (
             <div className="w-12 h-12 border-2 border-black bg-white flex items-center justify-center text-xl shrink-0 rounded-none shadow-[2px_2px_0px_0px_#000]">
@@ -239,9 +304,9 @@ export default function PlayerBar() {
               <div className="text-gray-700 text-xs font-bold uppercase truncate mt-0.5">
                 {track.artists?.join(", ")}
               </div>
-              {!isPremium && track?.previewUrl && (
-                <span className="inline-block bg-[#FFDE4D] text-[10px] font-black border border-black px-1 mt-1 uppercase tracking-wider">
-                  30s preview
+              {isPreviewTrack && (
+                <span className="inline-block bg-[#FFDE4D] text-[10px] font-black border border-black px-1 mt-1 uppercase tracking-wider shadow-[1px_1px_0px_0px_#000]">
+                  {track.previewUrl ? "30s preview" : "no preview"}
                 </span>
               )}
             </div>
@@ -252,9 +317,8 @@ export default function PlayerBar() {
           )}
         </div>
 
-        {/* Controls and Track Timeline */}
+        {/* Playback Controls & Progress System */}
         <div className="flex-1 w-full flex flex-col items-center gap-2">
-          {/* Action Trigger Buttons */}
           <div className="flex items-center gap-4">
             <ControlBtn onClick={prevTrack} title="Previous">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -292,12 +356,11 @@ export default function PlayerBar() {
             </ControlBtn>
           </div>
 
-          {/* Timeline Range Progress slider container */}
+          {/* Timeline Tracking Bar */}
           <div className="flex items-center gap-3 w-full max-w-xl">
-            <span className="text-black text-xs font-mono font-black bg-white px-1 border border-black min-w-[40px] text-center shadow-[1px_1px_0px_0px_#000]">
+            <span className="text-black text-xs font-mono font-black bg-white px-1 border border-black min-w-[42px] text-center shadow-[1px_1px_0px_0px_#000]">
               {formatDuration(currentPosition)}
             </span>
-
             <div className="flex-1 relative h-5 flex items-center">
               <input
                 type="range"
@@ -307,42 +370,37 @@ export default function PlayerBar() {
                 value={trackProgress || 0}
                 onChange={() => {}}
                 disabled
-                className="w-full absolute accent-black cursor-not-allowed appearance-none h-3 border-2 border-black bg-white"
+                className="w-full absolute appearance-none h-3 border-2 border-black bg-white cursor-not-allowed"
                 style={{
                   background: `linear-gradient(to right, #3D52D5 ${(trackProgress || 0) * 100}%, #FFFFFF ${(trackProgress || 0) * 100}%)`,
                 }}
               />
             </div>
-
-            <span className="text-black text-xs font-mono font-black bg-white px-1 border border-black min-w-[40px] text-center shadow-[1px_1px_0px_0px_#000]">
-              {formatDuration(trackDuration || 0)}
+            <span className="text-black text-xs font-mono font-black bg-white px-1 border border-black min-w-[42px] text-center shadow-[1px_1px_0px_0px_#000]">
+              {formatDuration(trackDuration)}
             </span>
           </div>
         </div>
 
-        {/* Volume & Context Indicators */}
+        {/* Volume Level & Mood Metadata */}
         <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-56 shrink-0 border-t-2 md:border-t-0 pt-3 md:pt-0 border-black">
           {moodCfg && (
-            <div
-              className={`flex items-center gap-1.5 px-2 py-1 border-2 border-black text-xs font-black uppercase tracking-tight bg-white shadow-[2px_2px_0px_0px_#000]`}
-            >
+            <div className="flex items-center gap-2 px-2 py-1 border-2 border-black text-xs font-black uppercase tracking-tight bg-white shadow-[2px_2px_0px_0px_#000]">
               <span>{moodCfg.emoji}</span>
               <span className="hidden sm:inline">{moodCfg.label}</span>
-
               {isPlaying && (
                 <div className="flex gap-0.5 items-end h-3 px-0.5">
                   {[...Array(3)].map((_, i) => (
                     <div
                       key={i}
                       className="w-1 bg-black border border-black animate-equalizer"
-                      style={{ animationDelay: `${i * 0.15}s`, height: "4px" }}
+                      style={{ animationDelay: i * 0.15 + "s", height: "4px" }}
                     />
                   ))}
                 </div>
               )}
             </div>
           )}
-
           <div className="flex items-center gap-2">
             <svg
               className="w-5 h-5 text-black shrink-0"
@@ -357,7 +415,7 @@ export default function PlayerBar() {
               max={100}
               value={volume}
               onChange={handleVolumeChange}
-              className="w-24 accent-black h-3 appearance-none border-2 border-black"
+              className="w-24 appearance-none border-2 border-black h-3 accent-black"
               style={{
                 background: `linear-gradient(to right, #FD49A0 ${volume}%, #FFFFFF ${volume}%)`,
               }}
@@ -365,18 +423,19 @@ export default function PlayerBar() {
           </div>
         </div>
 
-        {/* Premium Core Validation Prompts */}
-        {!isPremium && (
-          <div className="absolute bottom-full left-0 right-0 bg-[#FFDE4D] text-black border-y-2 border-black font-bold text-xs px-4 py-1.5 text-center uppercase tracking-tight">
-            ⚡ Spotify Free Session — Playing 30s previews.{" "}
+        {/* Notices */}
+        {isPreviewTrack && !playerError && (
+          <div className="absolute bottom-full left-0 right-0 bg-[#FFDE4D] text-black border-y-2 border-black font-black text-xs px-4 py-1.5 text-center uppercase tracking-tight">
+            ⚡ PLAYING 30S PREVIEWS —
             <a
               href="https://www.spotify.com/premium"
               target="_blank"
               rel="noreferrer"
-              className="underline font-black bg-black text-[#00E676] px-1 hover:text-white transition-colors ml-1"
+              className="underline font-black bg-black text-[#00E676] px-1 ml-1 hover:text-white transition-colors"
             >
-              Upgrade to Premium
-            </a>
+              UPGRADE TO SPOTIFY PREMIUM
+            </a>{" "}
+            FOR FULL SONGS
           </div>
         )}
 

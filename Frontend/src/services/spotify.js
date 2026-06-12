@@ -15,7 +15,7 @@ const SCOPES = [
   "user-modify-playback-state",
 ].join(" ");
 
-const STORAGE_KEY = "vibzfy_spotify";
+const STORAGE_KEY = "vibezfy_spotify";
 
 export function getStoredTokens() {
   try {
@@ -47,7 +47,7 @@ export function buildSpotifyAuthUrl(state) {
     redirect_uri: REDIRECT_URI,
     state: state || Math.random().toString(36).substring(7),
   });
-  return `https://accounts.spotify.com/authorize?${params}`;
+  return "https://accounts.spotify.com/authorize?" + params.toString();
 }
 
 // ── SDK ───────────────────────────────────────────────────────────────────────
@@ -73,13 +73,13 @@ export function initSpotifyPlayer(accessToken, onReady, onError) {
     if (sdkPlayer) sdkPlayer.disconnect();
 
     sdkPlayer = new window.Spotify.Player({
-      name: "Vibzfy Player",
+      name: "Vibezfy Player",
       getOAuthToken: (cb) => cb(accessToken),
       volume: 0.7,
     });
 
     sdkPlayer.addListener("ready", ({ device_id }) => {
-      console.log("✅ Spotify ready. Device:", device_id);
+      console.log("✅ Spotify SDK ready. Device:", device_id);
       onReady?.(device_id, sdkPlayer);
     });
 
@@ -104,43 +104,35 @@ export function initSpotifyPlayer(accessToken, onReady, onError) {
   };
 
   if (window.Spotify) return init();
-  else {
-    sdkReadyCallbacks.push(init);
-    loadSpotifySDK();
-  }
+  sdkReadyCallbacks.push(init);
+  loadSpotifySDK();
 }
 
 export function getPlayer() {
   return sdkPlayer;
 }
 
-// ── Playback Controls ─────────────────────────────────────────────────────────
-
-/**
- * Transfer playback to Vibzfy device then start playing tracks.
- * This two-step approach is required for Premium users.
- */
 export async function playTracks(deviceId, uris, accessToken) {
-  // Step 1: Transfer playback to our SDK device
-  const transferRes = await fetch("https://api.spotify.com/v1/me/player", {
+  // Step 1: Transfer playback to Vibezfy SDK device
+  await fetch("https://api.spotify.com/v1/me/player", {
     method: "PUT",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: "Bearer " + accessToken,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ device_ids: [deviceId], play: false }),
   });
 
-  // Wait for transfer to settle
+  // Step 2: Wait for transfer
   await new Promise((res) => setTimeout(res, 800));
 
-  // Step 2: Start playback with track URIs
+  // Step 3: Play URIs
   const playRes = await fetch(
-    `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+    "https://api.spotify.com/v1/me/player/play?device_id=" + deviceId,
     {
       method: "PUT",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: "Bearer " + accessToken,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ uris }),
@@ -149,17 +141,17 @@ export async function playTracks(deviceId, uris, accessToken) {
 
   if (!playRes.ok && playRes.status !== 204) {
     const err = await playRes.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Playback failed: ${playRes.status}`);
+    throw new Error(err.error?.message || "Playback failed: " + playRes.status);
   }
 }
 
 export async function setVolume(deviceId, volumePercent, accessToken) {
   await fetch(
-    `https://api.spotify.com/v1/me/player/volume?volume_percent=${volumePercent}&device_id=${deviceId}`,
-    {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
+    "https://api.spotify.com/v1/me/player/volume?volume_percent=" +
+      volumePercent +
+      "&device_id=" +
+      deviceId,
+    { method: "PUT", headers: { Authorization: "Bearer " + accessToken } },
   );
 }
 
@@ -167,5 +159,5 @@ export function formatDuration(ms) {
   const totalSec = Math.floor(ms / 1000);
   const min = Math.floor(totalSec / 60);
   const sec = totalSec % 60;
-  return `${min}:${sec.toString().padStart(2, "0")}`;
+  return min + ":" + sec.toString().padStart(2, "0");
 }

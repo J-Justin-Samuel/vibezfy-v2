@@ -64,7 +64,7 @@ export default function SignupPage() {
               V
             </div>
             <span className="font-black text-2xl uppercase tracking-wider">
-              Vibzfy
+              Vibezfy
             </span>
           </div>
           <span className="font-bold text-[10px] uppercase bg-black text-white px-2 py-0.5">

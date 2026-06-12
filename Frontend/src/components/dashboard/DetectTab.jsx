@@ -5,6 +5,7 @@ import {
   startDetectionLoop,
 } from "../../services/moodDetection.js";
 import { api } from "../../services/api.js";
+import { getTracksByMood } from "../../services/spotifyDirect.js";
 import { getMoodConfig, ALL_MOODS } from "../../utils/moodConfig.js";
 import MoodMeter from "../mood/MoodMeter.jsx";
 
@@ -64,11 +65,12 @@ export default function DetectTab() {
         await videoRef.current.play();
       }
       setCameraOn(true);
-    } catch (e) {
-      setError("Camera access denied. Check your window permissions.");
+    } catch {
+      setError("Camera access denied. Please allow camera permissions.");
     }
   }
 
+  // Refactored slightly to accept argument just to perfectly safety-match your exact execution definitions
   function stopCamera() {
     stopDetection();
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -95,62 +97,86 @@ export default function DetectTab() {
     setDetecting(false);
   }
 
-  const confirmMood = useCallback(async () => {
-    if (!currentMood) return;
-    lockMood(currentMood);
-    stopDetection();
-    const cfg = getMoodConfig(currentMood);
-    setAmbientScene(cfg.ambientScene);
+  const confirmMood = useCallback(
+    async (moodOverride) => {
+      const mood = moodOverride || currentMood;
+      if (!mood) return;
 
-    try {
-      const entry = await api.mood.save(currentMood, moodConfidence, {
-        detectedVia: "camera",
-      });
-      addToMoodHistory(
-        entry.entry || {
-          mood: currentMood,
-          confidence: moodConfidence,
-          timestamp: new Date(),
-        },
-      );
-    } catch (_) {}
+      lockMood(mood);
+      stopDetection();
+      stopCamera();
 
-    if (spotifyConnected && spotifyTokens?.accessToken) {
-      setLoadingPlaylist(true);
+      const cfg = getMoodConfig(mood);
+      setAmbientScene(cfg.ambientScene);
+
+      // Save mood entry
       try {
-        const data = await api.spotify.getRecommendations(
-          currentMood,
-          spotifyTokens.accessToken,
+        const entry = await api.mood.save(mood, moodConfidence, {
+          detectedVia: moodOverride ? "manual" : "camera",
+        });
+        addToMoodHistory(
+          entry?.entry || {
+            mood,
+            confidence: moodConfidence,
+            timestamp: new Date(),
+          },
         );
-        setCurrentPlaylist(data);
-        setActiveTab("home");
       } catch (e) {
-        setError("Spotify payload failed: " + e.message);
-      } finally {
-        setLoadingPlaylist(false);
+        console.warn("Mood save failed:", e.message);
       }
-    } else {
-      setActiveTab("home");
-    }
-  }, [currentMood, moodConfidence, spotifyConnected, spotifyTokens]);
+
+      // Fetch tracks directly from Spotify
+      if (spotifyConnected && spotifyTokens?.accessToken) {
+        setLoadingPlaylist(true);
+        setError(null);
+        try {
+          const data = await getTracksByMood(
+            mood,
+            spotifyTokens.accessToken,
+            20,
+          );
+
+          if (!data?.tracks?.length) {
+            setError(
+              "No tracks found. Make sure Spotify is open and your account is active.",
+            );
+            setActiveTab("home");
+            return;
+          }
+
+          setCurrentPlaylist(data);
+          setActiveTab("home");
+        } catch (e) {
+          console.error("Track fetch error:", e);
+          setError("Could not load tracks: " + e.message);
+          setActiveTab("home");
+        } finally {
+          setLoadingPlaylist(false);
+        }
+      } else {
+        setActiveTab("home");
+      }
+    },
+    [currentMood, moodConfidence, spotifyConnected, spotifyTokens],
+  );
 
   const moodCfg = currentMood ? getMoodConfig(currentMood) : null;
 
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
-      {/* Banner Component */}
+    <div className="p-4 sm:p-8 max-w-3xl mx-auto space-y-6 text-black selection:bg-black selection:text-[#FFDE4D]">
+      {/* Dynamic Header Block Banner Component layout */}
       <div className="bg-yellow-300 border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000]">
         <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight">
           MOOD SCANNER
         </h1>
-        <p className="font-bold text-sm bg-black text-white inline-block px-2 py-1 mt-2">
+        <p className="font-bold text-sm bg-black text-white inline-block px-2 py-1 mt-2 uppercase tracking-wide">
           LOCAL PROCESSING ENGINE — NO PRIVACY LEAKS
         </p>
       </div>
 
       {error && (
         <div className="bg-red-400 border-4 border-black p-4 font-bold text-sm shadow-[4px_4px_0px_0px_#000]">
-          ⚠ ERROR: {error}
+          ⚠️ ERROR: {error}
         </div>
       )}
 
@@ -182,7 +208,7 @@ export default function DetectTab() {
           </div>
         )}
 
-        {/* Floating Brutalist Badge */}
+        {/* Floating Brutalist Badge inside view container */}
         {detecting && currentMood && (
           <div className="absolute top-6 left-6 bg-white border-4 border-black p-3 shadow-[4px_4px_0px_0px_#000] flex items-center gap-3">
             <span className="text-3xl p-1 bg-yellow-300 border-2 border-black">
@@ -196,11 +222,20 @@ export default function DetectTab() {
                 CONFIDENCE: {Math.round(moodConfidence * 100)}%
               </div>
             </div>
+            <div className="ml-1 flex gap-0.5 items-end h-5">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-1 bg-black border border-black animate-equalizer"
+                  style={{ animationDelay: `${i * 0.15}s`, height: "4px" }}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Interactive Controls Bar */}
+      {/* Interactive Operational Controls Switches Bar layout */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
           {!cameraOn ? (
@@ -230,7 +265,7 @@ export default function DetectTab() {
               )}
               <button
                 onClick={stopCamera}
-                className="bg-white border-4 border-black p-4 font-black shadow-[4px_4px_0px_0px_#000] hover:bg-red-400 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all px-6"
+                className="bg-white border-4 border-black p-4 font-black shadow-[4px_4px_0px_0px_#000] hover:bg-red-400 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all px-6 shrink-0"
               >
                 KILL FEED
               </button>
@@ -238,7 +273,7 @@ export default function DetectTab() {
           )}
         </div>
 
-        {/* Confirmation Block Fixed Directly Below Control Buttons */}
+        {/* Target Confirmation Card block fixed below primary trigger buttons */}
         {currentMood && detecting && (
           <div className="bg-[#A3E635] border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="flex items-center gap-4">
@@ -255,11 +290,18 @@ export default function DetectTab() {
               </div>
             </div>
             <button
-              onClick={confirmMood}
+              onClick={() => confirmMood()}
               disabled={loadingPlaylist}
               className="w-full md:w-auto bg-black text-white font-black uppercase text-lg tracking-wider px-6 py-4 border-4 border-black shadow-[4px_4px_0px_0px_rgba(255,255,255,0.4)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
             >
-              {loadingPlaylist ? "LOCKING VIBE..." : "DEPLOY VIBE SYSTEM →"}
+              {loadingPlaylist ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  LOCKING VIBE...
+                </span>
+              ) : (
+                "DEPLOY VIBE SYSTEM →"
+              )}
             </button>
           </div>
         )}
@@ -267,7 +309,7 @@ export default function DetectTab() {
 
       {rawDetection && <MoodMeter detection={rawDetection} />}
 
-      {/* Manual Override Board */}
+      {/* Manual Override Deck Matrix Panel */}
       <div className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000]">
         <p className="font-black text-xs uppercase tracking-widest text-zinc-500 mb-4">
           // CORE MANUAL OVERRIDE DECK
@@ -279,19 +321,27 @@ export default function DetectTab() {
             return (
               <button
                 key={mood}
-                onClick={() => setCurrentMood(mood, 1)}
-                className={`p-3 border-2 border-black font-black uppercase text-xs tracking-tight transition-all text-left flex flex-col justify-between h-20 ${
+                onClick={() => confirmMood(mood)}
+                disabled={loadingPlaylist}
+                className={`p-3 border-2 border-black font-black uppercase text-xs tracking-tight transition-all text-left flex flex-col justify-between h-20 disabled:opacity-50 ${
                   isSelected
                     ? "bg-[#00F0FF] shadow-none translate-x-1 translate-y-1"
                     : "bg-white shadow-[3px_3px_0px_0px_#000] hover:bg-zinc-50 hover:translate-x-0.5 hover:translate-y-0.5"
                 }`}
               >
                 <span className="text-xl">{c.emoji}</span>
-                <span>{c.label}</span>
+                <span className="truncate w-full">{c.label}</span>
               </button>
             );
           })}
         </div>
+
+        {loadingPlaylist && (
+          <div className="flex items-center gap-2 mt-3 text-[#3D52D5] text-xs font-black uppercase tracking-wider animate-pulse">
+            <div className="w-3 h-3 border-2 border-[#3D52D5] border-t-transparent rounded-full animate-spin" />
+            Downloading Spotify manifest package streams...
+          </div>
+        )}
       </div>
     </div>
   );

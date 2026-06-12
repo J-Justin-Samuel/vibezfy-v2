@@ -55,7 +55,7 @@ export default function LoginPage() {
               V
             </div>
             <span className="font-black text-2xl uppercase tracking-wider">
-              Vibzfy
+              Vibezfy
             </span>
           </div>
           <span className="font-bold text-[10px] uppercase bg-black text-white px-2 py-0.5">
@@ -165,7 +165,7 @@ export default function LoginPage() {
           {/* Footer Router Link */}
           <div className="pt-2 text-center border-t-2 border-black shrink-0">
             <p className="font-bold text-xs uppercase">
-              New to Vibzfy?{" "}
+              New to Vibezfy?{" "}
               <Link
                 to="/signup"
                 className="underline font-black text-[#3D52D5] bg-[#3D52D5]/10 px-1 hover:bg-black hover:text-white transition-colors"

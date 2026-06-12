@@ -25,8 +25,8 @@ export async function getAuthUrl(req, res, next) {
       redirect_uri: process.env.SPOTIFY_REDIRECT_URI,
       state,
     });
-
-    const authUrl = `https://accounts.spotify.com/authorize?${params}`;
+    const authUrl =
+      "https://accounts.spotify.com/authorize?" + params.toString();
     res.json({ authUrl, state });
   } catch (err) {
     next(err);
@@ -36,15 +36,12 @@ export async function getAuthUrl(req, res, next) {
 export async function exchangeToken(req, res, next) {
   try {
     const { code, redirectUri } = req.body;
-
-    if (!code) {
+    if (!code)
       return res.status(400).json({ error: "Authorization code required" });
-    }
 
     const tokens = await spotifyService.exchangeCode(code, redirectUri);
     const profile = await spotifyService.getSpotifyProfile(tokens.accessToken);
 
-    // Save tokens to Firestore if available
     if (db) {
       await db
         .collection("users")
@@ -91,14 +88,11 @@ export async function exchangeToken(req, res, next) {
 export async function refreshToken(req, res, next) {
   try {
     const { refreshToken } = req.body;
-
-    if (!refreshToken) {
+    if (!refreshToken)
       return res.status(400).json({ error: "Refresh token required" });
-    }
 
     const tokens = await spotifyService.refreshAccessToken(refreshToken);
 
-    // Update stored tokens
     if (db) {
       await db
         .collection("users")
@@ -128,12 +122,9 @@ export async function refreshToken(req, res, next) {
 export async function getMoodRecommendations(req, res, next) {
   try {
     const { mood } = req.params;
-    const { accessToken, limit } = req.query;
-    console.log(
-      "👉 RAW LIMIT RECEIVED FROM FRONTEND:",
-      typeof limit,
-      `"${limit}"`,
-    );
+    const { accessToken } = req.query;
+    const limit = parseInt(req.query.limit, 10) || 20;
+
     if (!accessToken) {
       return res.status(400).json({ error: "Spotify access token required" });
     }
@@ -148,20 +139,21 @@ export async function getMoodRecommendations(req, res, next) {
       "neutral",
     ];
     if (!validMoods.includes(mood)) {
-      return res.status(400).json({
-        error: `Invalid mood. Must be one of: ${validMoods.join(", ")}`,
-      });
+      return res.status(400).json({ error: "Invalid mood: " + mood });
     }
-
-    // Force an evaluation check here before passing to the core service layer
-    const checkedLimit = limit && limit.trim() !== "" ? limit : 20;
 
     const tracks = await spotifyService.getRecommendationsByMood(
       mood,
       accessToken,
-      checkedLimit,
+      limit,
     );
     const config = getMoodConfig(mood);
+
+    if (!tracks || tracks.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No tracks found for mood: " + mood });
+    }
 
     res.json({
       mood,
@@ -174,12 +166,12 @@ export async function getMoodRecommendations(req, res, next) {
         id: t.id,
         uri: t.uri,
         name: t.name,
-        artists: t.artists.map((a) => a.name),
-        album: t.album.name,
-        albumArt: t.album.images?.[0]?.url || null,
-        duration: t.duration_ms,
-        previewUrl: t.preview_url,
-        spotifyUrl: t.external_urls?.spotify,
+        artists: t.artists ? t.artists.map((a) => a.name) : [],
+        album: t.album?.name || "",
+        albumArt: t.album?.images?.[0]?.url || null,
+        duration: t.duration_ms || 0,
+        previewUrl: t.preview_url || null,
+        spotifyUrl: t.external_urls?.spotify || null,
       })),
     });
   } catch (err) {
@@ -190,7 +182,6 @@ export async function getMoodRecommendations(req, res, next) {
 export async function createPlaylist(req, res, next) {
   try {
     const { mood, trackUris, accessToken, spotifyUserId } = req.body;
-
     if (!accessToken || !trackUris?.length || !spotifyUserId) {
       return res
         .status(400)

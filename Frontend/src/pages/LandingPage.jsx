@@ -87,7 +87,7 @@ export default function LandingPage() {
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 bg-[#00CC66] border border-black animate-pulse" />
           <span className="font-black text-lg tracking-widest text-black">
-            VIBZFY
+            VIBEZFY
           </span>
           <span className="text-black/50 text-xs font-bold">v1.0.26</span>
         </div>
@@ -133,7 +133,7 @@ export default function LandingPage() {
             </span>
           </h1>
           <p className="mt-8 max-w-xl text-sm md:text-base font-bold uppercase tracking-tight text-black leading-relaxed border-4 border-black bg-[#FFDE4D] p-4 shadow-[6px_6px_0_0_#000]">
-            Vibzfy reads your real-time facial expressions with computer vision
+            Vibezfy reads your real-time facial expressions with computer vision
             and curates a perfectly synced Spotify session — automatically. No
             skipping. No searching. Just vibes.
           </p>
@@ -413,7 +413,7 @@ export default function LandingPage() {
             .fill(null)
             .map((_, i) => (
               <span key={i} className="mr-8">
-                VIBZFY // EMOTION ENGINE // SPOTIFY SYNC // COMPUTER VISION //
+                VIBEZFY // EMOTION ENGINE // SPOTIFY SYNC // COMPUTER VISION //
                 MOOD DETECTION //
               </span>
             ))}

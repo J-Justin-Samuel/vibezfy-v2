@@ -33,7 +33,7 @@ export default function DashboardPage() {
             V
           </span>
           <span className="font-black text-xl uppercase tracking-tighter">
-            VIBZFY
+            VIBEZFY
           </span>
         </div>
         <button
