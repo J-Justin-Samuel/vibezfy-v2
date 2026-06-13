@@ -32,7 +32,7 @@ export default function SpotifyCallbackPage() {
     }
 
     api.spotify
-      .exchangeToken(code, "http://127.0.0.1:5173/callback")
+      .exchangeToken(code, "https://vibezfy-v2.vercel.app/callback")
       .then((data) => {
         const tokens = {
           accessToken: data.accessToken,
